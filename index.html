@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="הוצאות" />
+  <meta name="theme-color" content="#E65C00" />
+  <title>מנהל הוצאות</title>
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f2f2f7; color: #111; }
+    .app { display: flex; flex-direction: column; min-height: 100dvh; max-width: 480px; margin: 0 auto; background: #f2f2f7; }
+
+    .topbar { background: #fff; padding: max(env(safe-area-inset-top), 14px) 16px 14px; border-bottom: 1px solid #e5e5e5; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .app-title { font-size: 20px; font-weight: 700; color: #111; }
+    .total-chip { font-size: 14px; font-weight: 600; padding: 6px 16px; border-radius: 20px; background: #E65C00; color: #fff; }
+
+    .add-card { margin: 14px 14px 0; background: #fff; border-radius: 16px; border: 1px solid #e8e8e8; padding: 16px; }
+    .add-label { font-size: 12px; font-weight: 600; color: #888; margin-bottom: 10px; letter-spacing: .04em; }
+    .add-row { display: flex; gap: 8px; align-items: center; }
+    .desc-input { flex: 1; padding: 11px 14px; border: 1.5px solid #e0e0e0; border-radius: 12px; font-size: 15px; background: #f9f9f9; color: #111; outline: none; font-family: inherit; direction: rtl; min-width: 0; transition: border-color .2s; }
+    .desc-input:focus { border-color: #E65C00; background: #fff; }
+    .amount-input { width: 90px; padding: 11px 10px; border: 1.5px solid #e0e0e0; border-radius: 12px; font-size: 15px; background: #f9f9f9; color: #111; outline: none; font-family: inherit; text-align: center; transition: border-color .2s; }
+    .amount-input:focus { border-color: #E65C00; background: #fff; }
+    .add-btn { width: 44px; height: 44px; border-radius: 50%; background: #E65C00; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: opacity .15s, transform .1s; }
+    .add-btn:active { opacity: .8; transform: scale(.95); }
+    .add-btn svg { width: 22px; height: 22px; fill: #fff; }
+    .cat-hint { margin-top: 9px; font-size: 13px; color: #999; min-height: 20px; display: flex; align-items: center; gap: 5px; transition: color .2s; }
+    .cat-hint.detected { color: #E65C00; font-weight: 600; }
+
+    .cats-section { padding: 16px 14px 20px; }
+    .section-label { font-size: 12px; font-weight: 600; color: #888; margin-bottom: 12px; letter-spacing: .04em; }
+    .cats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .cat-card { background: #fff; border: 1px solid #ebebeb; border-radius: 16px; padding: 14px; cursor: pointer; transition: transform .15s, border-color .15s; user-select: none; }
+    .cat-card:active { transform: scale(.97); }
+    .cat-card.has-items { border-color: #ddd; }
+    .cat-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .cat-icon-wrap { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .cat-total { font-size: 16px; font-weight: 700; color: #111; }
+    .cat-name { font-size: 14px; font-weight: 600; color: #333; }
+    .cat-count { font-size: 12px; color: #aaa; margin-top: 3px; }
+
+    .detail-view { display: none; flex-direction: column; min-height: 100dvh; background: #f2f2f7; }
+    .detail-view.open { display: flex; }
+    .detail-header { background: #fff; padding: max(env(safe-area-inset-top), 14px) 16px 14px; border-bottom: 1px solid #e5e5e5; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .back-btn { background: none; border: none; cursor: pointer; color: #E65C00; padding: 4px; display: flex; align-items: center; font-size: 15px; font-family: inherit; font-weight: 600; gap: 4px; }
+    .detail-title { font-size: 17px; font-weight: 700; color: #111; flex: 1; }
+    .detail-total { font-size: 15px; font-weight: 700; color: #E65C00; }
+    .detail-list { flex: 1; padding: 14px; display: flex; flex-direction: column; gap: 9px; }
+    .exp-item { background: #fff; border: 1px solid #ebebeb; border-radius: 14px; padding: 13px 14px; display: flex; align-items: center; gap: 10px; }
+    .exp-info { flex: 1; min-width: 0; }
+    .exp-name { font-size: 15px; color: #111; font-weight: 500; }
+    .exp-date { font-size: 12px; color: #aaa; margin-top: 2px; }
+    .exp-amt { font-size: 16px; font-weight: 700; color: #111; white-space: nowrap; }
+    .del-btn { background: none; border: none; cursor: pointer; color: #ccc; padding: 6px; border-radius: 8px; font-size: 18px; transition: color .15s; display: flex; align-items: center; }
+    .del-btn:active { color: #e24b4a; }
+    .empty-cat { text-align: center; padding: 40px 20px; color: #bbb; font-size: 15px; }
+
+    .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #222; color: #fff; padding: 9px 20px; border-radius: 22px; font-size: 14px; white-space: nowrap; opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 999; }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<div class="app" id="main-view">
+  <div class="topbar">
+    <span class="app-title">💰 הוצאות</span>
+    <span class="total-chip" id="total-chip">₪0</span>
+  </div>
+
+  <div class="add-card">
+    <div class="add-label">הוספת הוצאה</div>
+    <div class="add-row">
+      <input class="desc-input" id="desc" placeholder="תיאור (דלק, קפה, לייזר...)" dir="rtl" oninput="onDesc()" />
+      <input class="amount-input" id="amt" type="number" placeholder="₪" />
+      <button class="add-btn" onclick="addExpense()" aria-label="הוסף">
+        <svg viewBox="0 0 24 24"><path d="M19 11h-6V5h-2v6H5v2h6v6h2v-6h6z"/></svg>
+      </button>
+    </div>
+    <div class="cat-hint" id="cat-hint">הקלד תיאור לזיהוי קטגוריה אוטומטי</div>
+  </div>
+
+  <div class="cats-section">
+    <div class="section-label">קטגוריות</div>
+    <div class="cats-grid" id="cats-grid"></div>
+  </div>
+</div>
+
+<div class="detail-view" id="detail-view">
+  <div class="detail-header">
+    <button class="back-btn" onclick="closeDetail()">&#8594; חזור</button>
+    <span class="detail-title" id="detail-title"></span>
+    <span class="detail-total" id="detail-total"></span>
+  </div>
+  <div class="detail-list" id="detail-list"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const CATS = [
+  {
+    key: 'fuel',
+    label: 'דלק',
+    icon: '⛽',
+    bg: '#FFF3E0', text: '#BF360C',
+    kw: ['דלק','גז','פז','סונול','דור','אלון','bp','ten','גז סטיישן','תדלוק']
+  },
+  {
+    key: 'car',
+    label: 'רכב',
+    icon: '🚗',
+    bg: '#E8EAF6', text: '#1A237E',
+    kw: [
+      'חניה','חניון','רישוי','טסט','טסטר','מוסך','גרר','גרירה','תיקון רכב','פנצ\'ר',
+      'שמן','צמיגים','צמיג','ביטוח רכב','ביטוח חובה','ביטוח מקיף','קנס','דו"ח',
+      'דוח','קנסות','רחיצת רכב','שטיפת רכב','פחחות','מכון רכב','עמלת חניה',
+      'הייצ\'ר','פארקינג','parking','שוליים','תו חניה'
+    ]
+  },
+  {
+    key: 'food',
+    label: 'אוכל',
+    icon: '🍔',
+    bg: '#E8F5E9', text: '#1B5E20',
+    kw: [
+      'אוכל','מסעדה','קפה','שף','פיצה','סושי','שווארמה','פלאפל','ארוחה','בורגר',
+      'חומוס','מנה','קנטינה','מאפה','סלט','מקדונלד','בורגר קינג','שוק','סנדוויץ',
+      'גלידה','עוגה','מאפייה','פסטה','סטייק','דגים','רמן','ניודלס','טוסט','קרואסון',
+      'וופל','פנקייק','גריל','בשר','עוף','כבד','מנגל','פיתות','פיתה','לאפה','לאפות',
+      'ארומה','מנפיס','קסטרו','קפה קפה','קפולה','קפה גרג','נוסטלגיה','אנדרסון',
+      'קפה לנדוור','לנדוور','אבו ג\'ורג','אבוג\'ורג','האחים','יונס','אבו חסן',
+      'נאות המדבר','בראנץ','brunch','שבת אוכל','קידוש','סעודה','שולחן',
+      'דומינוס','פאפא ג\'ון','שוורמה','קבב','מוסקה','שניצל','קציצות',
+      'תירס','מרק','כופתאות','דמפלינג','טאקו','בוריטו','נאן','טנדורי',
+      'בר אוכל','ספיישל','עסקית','עסק','מנה ראשונה','מנה עיקרית','קינוח',
+      'דיזנגוף','רוטשילד','שינקין','נמל','יפו','פלורנטין','הכרמל',
+      'wolt','wolt!','ten bis','tenbis','mishloha','רסטורנט','קפטריה','מזנון',
+    ]
+  },
+  {
+    key: 'aesth',
+    label: 'אסתטיקה',
+    icon: '💅',
+    bg: '#FCE4EC', text: '#880E4F',
+    kw: [
+      'מספרה','תספורת','טיפול','פדיקור','מניקור','סלון','יופי','קוסמטיקה',
+      'שיער','גבות','צבע שיער','בוטוקס','פילר','עיסוי','ניקוי פנים','ספא',
+      'לייזר','ליזר','laser','הסרת שיער','אפילציה','איפור','מסכה','פילינג',
+      'הארכות','ג\'ל','אקריל','ריסים','הרמת ריסים','צביעה','גוון','הבהרה',
+      'קרטין','החלקה','תסרוקת','ספריי','מוצרי יופי','חבילת יופי','רטינול',
+      'קרם','סרום','spа','beauty','laser','wax','ווקס','שעווה','הסרה',
+      'אנטי אייג\'ינג','נוגדי חמצון','hyaluron','הזרקה','פלזמה','מיקרו',
+      'דרמה','קליניק','כלנית','להב','נאות','פרימיום','ביוטי'
+    ]
+  },
+  {
+    key: 'leisure',
+    label: 'פנאי',
+    icon: '🎮',
+    bg: '#EDE7F6', text: '#4A148C',
+    kw: [
+      'קולנוע','סרט','בידור','חופשה','כרטיס','קונצרט','הופעה','משחק',
+      'נטפליקס','ספוטיפי','אפל מיוזיק','דיסני פלוס','hbo','youtube premium',
+      'בריכה','ים','פארק','גן שעשועים','בולינג','מיניגולף','פסטיבל','תיאטרון',
+      'מוזיאון','תערוכה','קריוקי','בר ','מסיבה','אייסינג','כדורסל','כדורגל',
+      'טניס','כושר','gym','fitness','חדר כושר','זומבה','יוגה','פילאטיס',
+      'אופניים','קורקינט','גלגיליות','escape room','חדר בריחה','paintball'
+    ]
+  },
+  {
+    key: 'debt',
+    label: 'החזר חוב',
+    icon: '🔄',
+    bg: '#E3F2FD', text: '#0D47A1',
+    kw: [
+      'החזר','חוב','הלוואה','פריסה','ריבית','משכנתא','לדן','לרון','לנועה',
+      'ליונתן','לעידו','לאמא','לאבא','לאח','לאחות','לחבר','לחברה','להחזיר',
+      'העברתי','שילמתי בשביל','קיזוז','ביט','bit','paybox','פייבוקס'
+    ]
+  },
+  {
+    key: 'health',
+    label: 'בריאות',
+    icon: '💊',
+    bg: '#E0F2F1', text: '#004D40',
+    kw: [
+      'תרופה','רופא','מרפאה','קופת חולים','ביטוח בריאות','אפוטקה','בית מרקחת',
+      'שיניים','אופטיקה','עיניים','משקפיים','עדשות','פסיכולוג','פיזיו','פיזיותרפיה',
+      'קלינאי','ניתוח','הדמיה','אולטרסאונד','בדיקת דם','מעבדה','טיפול שיניים',
+      'אורתודונט','גינקולוג','דרמטולוג','אורתופד','נוירולוג','קרדיולוג',
+      'ביקור חולים','ויטמינים','תוסף','supplement','חדר מיון','מד לחץ'
+    ]
+  },
+  {
+    key: 'shop',
+    label: 'קניות',
+    icon: '🛍️',
+    bg: '#FFF8E1', text: '#E65100',
+    kw: [
+      'חנות','קניון','ביגוד','נעליים','בגד','חולצה','מכנסיים','שמלה','ג\'ינס',
+      'אמזון','זארה','H&M','שטראוס','מנגו','ניקה','אדידס','קונברס','קרוקס',
+      'ריהוט','מכשיר','טלוויזיה','מחשב','אייפון','סמסונג','אייפד','אוזניות',
+      'שואב','מכונת כביסה','מקרר','מזגן','רמקול','מסך','שעון','תיק','ארנק',
+      'תכשיטים','שרשרת','צמיד','טבעת','איקאה','ikea','כלים','סיר','מחבת',
+      'ספר','משחק קופסא','צעצוע','מתנה','gift','aliexpress','shein','online'
+    ]
+  },
+  {
+    key: 'groceries',
+    label: 'סופר',
+    icon: '🛒',
+    bg: '#F1F8E9', text: '#33691E',
+    kw: [
+      'סופר','שופרסל','רמי לוי','ויקטורי','מגה','יינות ביתן','מחסני השוק',
+      'אושר עד','סטופ מרקט','ספרשיין','טיב טעם','חצי חינם','מכולת',
+      'קניות אוכל','ירקות','פירות','לחם','חלב','ביצים','עגבניות','מלפפון',
+      'גבינה','יוגורט','בשר','עוף','דגים','אורז','פסטה','שמן','סוכר',
+      'קמח','קפה','תה','שוקולד','חטיפים','שתייה','מים','מיץ'
+    ]
+  },
+  {
+    key: 'bills',
+    label: 'חשבונות',
+    icon: '🏠',
+    bg: '#F5F5F5', text: '#212121',
+    kw: [
+      'חשמל','מים','ארנונה','ועד בית','ועד','טלפון','סלולר','אינטרנט','כבלים',
+      'hot','yes','cellcom','partner','019','012','bezeq','בזק','פרטנר',
+      'סלקום','הוט','שכירות','דירה','שכר דירה','ביטוח דירה','ביטוח חיים',
+      'מנוי','subscription','פודקאסט','icloud','google one','dropbox'
+    ]
+  },
+  {
+    key: 'education',
+    label: 'חינוך',
+    icon: '📚',
+    bg: '#E8F4FD', text: '#0B3D6B',
+    kw: [
+      'קורס','לימודים','אוניברסיטה','מכללה','בית ספר','שכר לימוד','ספר לימוד',
+      'חוג','שיעור פרטי','מורה','מדריך','הכשרה','סמינר','וובינר','udemy',
+      'coursera','לינקדאין לרנינג','כלי לימוד','ציוד לימודי','מצנח'
+    ]
+  },
+  {
+    key: 'other',
+    label: 'אחר',
+    icon: '📦',
+    bg: '#EEEEEE', text: '#424242',
+    kw: []
+  }
+];
+
+let expenses = JSON.parse(localStorage.getItem('exp_v4') || '[]');
+let openCat = null;
+
+function save() { try { localStorage.setItem('exp_v4', JSON.stringify(expenses)); } catch(e){} }
+
+function detectCat(t) {
+  const l = t.toLowerCase().trim();
+  // split into words for exact word matching on short keywords
+  const words = l.split(/\s+/);
+  for (const c of CATS) {
+    if (c.key === 'other') continue;
+    if (c.kw.some(k => {
+      const kl = k.toLowerCase();
+      // if keyword has spaces, use substring match; otherwise also check word boundary
+      if (kl.includes(' ')) return l.includes(kl);
+      return l.includes(kl);
+    })) return c;
+  }
+  return CATS[CATS.length - 1];
+}
+
+function onDesc() {
+  const v = document.getElementById('desc').value.trim();
+  const hint = document.getElementById('cat-hint');
+  if (v.length > 1) {
+    const c = detectCat(v);
+    hint.className = 'cat-hint detected';
+    hint.textContent = c.icon + ' ' + c.label;
+  } else {
+    hint.className = 'cat-hint';
+    hint.textContent = 'הקלד תיאור לזיהוי קטגוריה אוטומטי';
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function addExpense() {
+  const desc = document.getElementById('desc').value.trim();
+  const amt = parseFloat(document.getElementById('amt').value);
+  if (!desc || isNaN(amt) || amt <= 0) {
+    document.getElementById('desc').style.borderColor = '#e24b4a';
+    setTimeout(() => document.getElementById('desc').style.borderColor = '', 1200);
+    return;
+  }
+  const cat = detectCat(desc);
+  expenses.unshift({ id: Date.now(), desc, amount: amt, catKey: cat.key, date: new Date().toLocaleDateString('he-IL') });
+  save();
+  document.getElementById('desc').value = '';
+  document.getElementById('amt').value = '';
+  document.getElementById('cat-hint').className = 'cat-hint';
+  document.getElementById('cat-hint').textContent = 'הקלד תיאור לזיהוי קטגוריה אוטומטי';
+  showToast('✓ נוסף ל' + cat.label);
+  renderGrid();
+}
+
+function renderGrid() {
+  const total = expenses.reduce((s, e) => s + e.amount, 0);
+  document.getElementById('total-chip').textContent = '₪' + Math.round(total).toLocaleString('he-IL');
+  const grid = document.getElementById('cats-grid');
+  grid.innerHTML = '';
+  CATS.forEach(cat => {
+    const items = expenses.filter(e => e.catKey === cat.key);
+    const sum = items.reduce((s, e) => s + e.amount, 0);
+    const card = document.createElement('div');
+    card.className = 'cat-card' + (items.length ? ' has-items' : '');
+    card.onclick = () => openDetail(cat.key);
+    card.innerHTML = `
+      <div class="cat-top">
+        <div class="cat-icon-wrap" style="background:${cat.bg}">${cat.icon}</div>
+        <div class="cat-total">${items.length ? '₪' + Math.round(sum).toLocaleString('he-IL') : ''}</div>
+      </div>
+      <div class="cat-name">${cat.label}</div>
+      <div class="cat-count">${items.length ? items.length + ' הוצאות' : 'ריק'}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function openDetail(key) {
+  openCat = key;
+  const cat = CATS.find(c => c.key === key);
+  const items = expenses.filter(e => e.catKey === key);
+  const sum = items.reduce((s, e) => s + e.amount, 0);
+  document.getElementById('detail-title').textContent = cat.icon + ' ' + cat.label;
+  document.getElementById('detail-total').textContent = items.length ? '₪' + Math.round(sum).toLocaleString('he-IL') : '';
+  const list = document.getElementById('detail-list');
+  list.innerHTML = '';
+  if (!items.length) {
+    list.innerHTML = '<div class="empty-cat">אין עדיין הוצאות בקטגוריה זו 😊</div>';
+  } else {
+    items.forEach(exp => {
+      const el = document.createElement('div');
+      el.className = 'exp-item'; el.id = 'exp-' + exp.id;
+      el.innerHTML = `
+        <div class="exp-info">
+          <div class="exp-name">${exp.desc}</div>
+          <div class="exp-date">${exp.date}</div>
+        </div>
+        <div class="exp-amt">₪${Math.round(exp.amount).toLocaleString('he-IL')}</div>
+        <button class="del-btn" onclick="deleteExp(${exp.id})" aria-label="מחק">✕</button>
+      `;
+      list.appendChild(el);
+    });
+  }
+  document.getElementById('main-view').style.display = 'none';
+  document.getElementById('detail-view').classList.add('open');
+}
+
+function closeDetail() {
+  document.getElementById('detail-view').classList.remove('open');
+  document.getElementById('main-view').style.display = 'flex';
+  document.getElementById('main-view').style.flexDirection = 'column';
+  openCat = null;
+}
+
+function deleteExp(id) {
+  expenses = expenses.filter(e => e.id !== id);
+  save(); renderGrid();
+  if (openCat) openDetail(openCat);
+}
+
+document.getElementById('amt').addEventListener('keydown', e => { if (e.key === 'Enter') addExpense(); });
+document.getElementById('desc').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('amt').focus(); });
+
+renderGrid();
+</script>
+</body>
+</html>
