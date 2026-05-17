@@ -2,7 +2,7 @@
   "name": "מנהל הוצאות",
   "short_name": "הוצאות",
   "description": "מעקב הוצאות חכם לפי קטגוריות",
-  "start_url": "/",
+  "start_url": "/expenses-bloy/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#E65C00",
